@@ -117,18 +117,21 @@ public class Lexer {
                                    Token.eqeqTok);
             case '<': ch = nextChar();
             	if(ch=='='){
+            		nextChar();
             		ch = nextChar();
             		return Token.lteqTok;
             	}
         		return Token.ltTok;
             case '>': ch = nextChar();
             	if(ch=='='){
+            		nextChar();
             		ch = nextChar();
             		return Token.gteqTok;
             	}
         		return Token.gtTok;
             case '!': ch = nextChar();
             	if(ch=='='){
+            		nextChar();
             		ch = nextChar();
             		return Token.noteqTok;
             	}
@@ -158,7 +161,10 @@ public class Lexer {
 
     private Token chkOpt(char c, Token one, Token two) {
     	ch = nextChar();
-    	if(ch==c) return two;
+    	if(ch==c){ 
+    		ch = nextChar();
+    		return two;
+    	}
         return one;  // student exercise
     }
 

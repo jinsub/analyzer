@@ -1,30 +1,45 @@
-// Abstract syntax for the language C++Lite,
+/// Abstract syntax for the language C++Lite,
 // exactly as it appears in Appendix B.
-
+// add a display method to each class
 import java.util.*;
+import java.lang.*;
 
 class Program {
     // Program = Declarations decpart ; Block body
     Declarations decpart;
     Block body;
 
+    /* pass an int value to display() and have the int value represent the 
+    number of constant whitespace representation : \n : as a block that can be 
+    incremented. */
+
     Program (Declarations d, Block b) {
         decpart = d;
         body = b;
     }
-    public void display(){
-    	
+    public void display() {
+    	int n=0;
+    	String col = "Program";
+    	int m = n+col.length(); 
+	    System.out.print("Abstract Syntax :\n"+col);
+	    decpart.display(0);
+	    body.display(m);
     }
-
 }
-
+    
 class Declarations extends ArrayList<Declaration> {
     // Declarations = Declaration*
     // (a list of declarations d1, d2, ..., dn)
-	ArrayList<Declaration> decArr;
-	Declarations(ArrayList<Declaration> decArr){
-		this.decArr = decArr;
-	}
+
+    public void display(int k) {
+        for (int w = 0; w < k; ++w) {
+            System.out.print("\t");
+        }
+    System.out.print(" - Declarations = {");
+	for (int i = 0; i < size(); i++)
+		get(i).display(k);
+    System.out.println("}");
+    }
 }
 
 class Declaration {
@@ -34,8 +49,11 @@ class Declaration {
 
     Declaration (Variable var, Type type) {
         v = var; t = type;
-    } // declaration */
-
+    }
+    public void display(int k) {
+            System.out.print(" <" + v + ", ");
+            System.out.print(t + "> ");
+        }
 }
 
 class Type {
@@ -56,6 +74,8 @@ class Type {
 abstract class Statement {
     // Statement = Skip | Block | Assignment | Conditional | Loop
 
+    public void display(int k) {
+    }
 }
 
 class Skip extends Statement {
@@ -65,6 +85,19 @@ class Block extends Statement {
     // Block = Statement*
     //         (a Vector of members)
     public ArrayList<Statement> members = new ArrayList<Statement>();
+
+    public void display(int k) {
+    	int n = k;
+        for (int w = 0; w < k; ++w) {
+            System.out.print(" ");
+        }
+        String col = " - Statements";
+        int m = n+col.length();
+        System.out.println(col);
+	//array display look up list array in the API
+	for (int i = 0; i < members.size(); i++)
+		members.get(i).display(m);
+    }
 
 }
 
@@ -77,11 +110,23 @@ class Assignment extends Statement {
         target = t;
         source = e;
     }
+    public void display(int k) {
+        for (int w = 0; w < k; ++w) {
+            System.out.print(" ");
+        }
+        String col = " - Assignement";
+        int m = k+col.length();
+        System.out.print(col);
+        target.display(0);
+        System.out.println();
+        source.display(m);
+    }
 
 }
 
 class Conditional extends Statement {
 // Conditional = Expression test; Statement thenbranch, elsebranch
+
     Expression test;
     Statement thenbranch, elsebranch;
     // elsebranch == null means "if... then"
@@ -93,7 +138,21 @@ class Conditional extends Statement {
     Conditional (Expression t, Statement tp, Statement ep) {
         test = t; thenbranch = tp; elsebranch = ep;
     }
-    
+    public void display(int k) {
+        for (int w = 0; w < k; ++w){
+            System.out.print(" ");
+        }
+        String col = " - conditional";
+        int m = k+col.length();
+        System.out.println(col+" /****condition****/");
+        test.display(m);
+        for (int w = 0; w < m; ++w) {
+            System.out.print(" ");
+        }
+        System.out.println(" /****condition****/");
+        thenbranch.display(m);
+        elsebranch.display(m);
+    }
 }
 
 class Loop extends Statement {
@@ -104,11 +163,29 @@ class Loop extends Statement {
     Loop (Expression t, Statement b) {
         test = t; body = b;
     }
-    
+    public void display(int k) {
+    	int n = k;
+        for (int w = 0; w < n; ++w) {
+            System.out.print(" ");
+        }
+        String col = " - Loop";
+        int m = n+col.length();
+        System.out.println(col+" /****condition****/");
+        test.display(m);
+        for (int w = 0; w < m; ++w) {
+            System.out.print(" ");
+        }
+        System.out.println(" /****condition****/");
+        body.display(m);
+    }
+	
 }
 
 abstract class Expression {
     // Expression = Variable | Value | Binary | Unary
+    public void display(int k) {
+	//	System.out.println("Display Expression Object");
+    }
 
 }
 
@@ -126,7 +203,13 @@ class Variable extends Expression {
     }
     
     public int hashCode ( ) { return id.hashCode( ); }
-
+    
+    public void display(int k) {
+        for (int w = 0; w < k; ++w) {
+            System.out.print(" ");
+        }
+        System.out.print(" - Variable " + id);
+    }
 }
 
 abstract class Value extends Expression {
@@ -138,12 +221,13 @@ abstract class Value extends Expression {
     int intValue ( ) {
         assert false : "should never reach here";
         return 0;
-    } // implementation of this function is unnecessary can can be removed.
+    }
     
     boolean boolValue ( ) {
         assert false : "should never reach here";
         return false;
-    } 
+    }
+    
     char charValue ( ) {
         assert false : "should never reach here";
         return ' ';
@@ -164,7 +248,10 @@ abstract class Value extends Expression {
         if (type == Type.CHAR) return new CharValue( );
         if (type == Type.FLOAT) return new FloatValue( );
         throw new IllegalArgumentException("Illegal type in mkValue");
-    }
+    }	    
+/*public void display() {
+	System.out.println("Display Value Object");
+    }*/
 }
 
 class IntValue extends Value {
@@ -182,6 +269,13 @@ class IntValue extends Value {
     public String toString( ) {
         if (undef)  return "undef";
         return "" + value;
+    }
+    public void display(int k) {
+        for (int w = 0; w < k; ++w) {
+            System.out.print(" ");
+        }
+	System.out.print(" - Int : ");
+	System.out.println(value);
     }
 
 }
@@ -207,6 +301,13 @@ class BoolValue extends Value {
         if (undef)  return "undef";
         return "" + value;
     }
+    public void display(int k) {
+        for (int w = 0; w < k; ++w) {
+            System.out.print(" ");
+        }
+	System.out.print("BoolValue: ");
+	System.out.println(value);
+    }
 
 }
 
@@ -225,6 +326,13 @@ class CharValue extends Value {
     public String toString( ) {
         if (undef)  return "undef";
         return "" + value;
+    }
+    public void display(int k) {
+        for (int w = 0; w < k; ++w) {
+            System.out.print(" ");
+        }
+	System.out.print("CharValue: ");
+	System.out.println(value);
     }
 
 }
@@ -245,6 +353,13 @@ class FloatValue extends Value {
         if (undef)  return "undef";
         return "" + value;
     }
+    public void display(int k) {
+        for (int w = 0; w < k; ++w) {
+            System.out.print(" ");
+        }
+	System.out.print("FloatValue: ");
+	System.out.println(value);
+    }
 
 }
 
@@ -255,9 +370,24 @@ class Binary extends Expression {
 
     Binary (Operator o, Expression l, Expression r) {
         op = o; term1 = l; term2 = r;
+    }
+    public void display(int k) {
+        for (int w = 0; w < k; ++w) {
+            System.out.print(" ");
+        }
+        String col = " - Binary ";
+        int n = k + col.length();
+        System.out.print(col);
+        op.display(0);
+        term1.display(n);
+        System.out.println();
+        term2.display(n);
     } // binary
-
+    public String toString() {
+        return ("Binary: op="+op+" term1="+term1+" term2="+term2);
+    }
 }
+
 
 class Unary extends Expression {
     // Unary = Operator op; Expression term
@@ -267,8 +397,30 @@ class Unary extends Expression {
     Unary (Operator o, Expression e) {
         op = o; term = e;
     } // unary
-
+    public void display(int k) {
+        for (int w = 0; w < k; ++w) {
+            System.out.print(" ");
+        }
+	System.out.print("Unary: ");
+	op.display(++k);
+	term.display(k);
+    }
 }
+
+class ColumnMatch {
+	private int currentCol;
+	public ColumnMatch(){
+		currentCol=0;
+	}
+	public String columnMatch(String arg){
+		currentCol += arg.length();
+		return arg;
+	}
+	public int getColNum(){
+		return currentCol;
+	}
+}
+
 
 class Operator {
     // Operator = BooleanOp | RelationalOp | ArithmeticOp | UnaryOp
@@ -390,6 +542,7 @@ class Operator {
     final static String boolMap[ ] [ ] = {
         {EQ, BOOL_EQ}, {NE, BOOL_NE}, {LT, BOOL_LT},
         {LE, BOOL_LE}, {GT, BOOL_GT}, {GE, BOOL_GE},
+        {AND, AND}, {OR, OR}, {NOT, NOT} 
     };
 
     final static private Operator map (String[][] tmap, String op) {
@@ -415,5 +568,7 @@ class Operator {
     final static public Operator boolMap (String op) {
         return map (boolMap, op);
     }
-
+    public void display(int k) {
+	System.out.println(" - "+val);
+    }
 }

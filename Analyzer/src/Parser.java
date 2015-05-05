@@ -16,6 +16,7 @@ public class Parser {
   
     private String match (TokenType t) { // * return the string of a token if it matches with t *
         String value = token.value();
+//        System.out.println(token.type()+" "+token.value());
         if (token.type().equals(t))
             token = lexer.next();
         else
@@ -36,21 +37,26 @@ public class Parser {
     }
   
     public Program program() {
+//    	System.out.println("\tprogram");
         // Program --> void main ( ) '{' Declarations Statements '}'
         TokenType[ ] header = {TokenType.Int, TokenType.Main,
                           TokenType.LeftParen, TokenType.RightParen};
-        for (int i=0; i<header.length; i++)   // bypass "int main ( )"
+        for (int i=0; i<header.length; i++)   	// bypass "int main ( )"
             match(header[i]);
-        match(TokenType.LeftBrace);
-        Program program = new Program(declarations(), statements());
-        match(TokenType.RightBrace);
-        return program;  // student exercise
+        match(TokenType.LeftBrace);				// {
+//        System.out.println("\tDeclaration Start");
+        Declarations decs = declarations();		// 		Declarations
+//        System.out.println("\tStatement Start");
+        Block stmts = statements();				//		Statements
+        match(TokenType.RightBrace);			// }
+        Program program = new Program(decs, stmts);
+        return program;  // student exercises
     }
   
     private Declarations declarations () {
+//    	System.out.println("\tdeclaration");
         // Declarations --> { Declaration }
-    	ArrayList<Declaration> decArr = new ArrayList<Declaration>();
-    	Declarations decs = new Declarations(decArr);
+    	Declarations decs = new Declarations();
     	while(isType()){
     		declaration(decs);
     	}
@@ -58,16 +64,24 @@ public class Parser {
     }
   
     private void declaration (Declarations ds) {
+//    	System.out.println("\tdeclaration");
         // Declaration  --> Type Identifier { , Identifier } ;
         // student exercise
-    	Declaration dec = new Declaration(new Variable(match(TokenType.Identifier)), type());
+    	Type t = type();
+    	Variable var = new Variable(match(TokenType.Identifier));
+    	Declaration dec = new Declaration(var, t);
     	ds.add(dec);
-    	while(token.type().equals(Token.commaTok)){
-    		declaration(ds);
-    	}    	
+    	while(token.type().equals(TokenType.Comma)){
+    		match(TokenType.Comma);
+    		var = new Variable(match(TokenType.Identifier));
+    		dec = new Declaration(var, t);
+    		ds.add(dec);
+    	}
+    	match(TokenType.Semicolon);
     }
   
     private Type type () {
+//    	System.out.println("\ttype");
         // Type  -->  int | bool | float | char
         Type t = null;
         // student exercise
@@ -75,46 +89,61 @@ public class Parser {
         else if(token.type().equals(TokenType.Float)) t = Type.FLOAT;
         else if(token.type().equals(TokenType.Char)) t = Type.CHAR;
         else if(token.type().equals(TokenType.Bool)) t = Type.BOOL;
+        else error("type error!");
+        token = lexer.next();
         return t;          
     }
   
     private Statement statement() {
+//    	System.out.println("\tstatement");
         // Statement --> ; | Block | Assignment | IfStatement | WhileStatement
         Statement s = new Skip();
         // student exercise
+        if(token.type().equals(TokenType.LeftBrace)){
+        	match(TokenType.LeftBrace);
+        	s = statements();
+        	match(TokenType.RightBrace);
+        }
+        else if(token.type().equals(TokenType.Identifier)) 	s = assignment();
+        else if(token.type().equals(TokenType.If)) 			s = ifStatement();
+        else if(token.type().equals(TokenType.While)) 		s = whileStatement();
+        else error("statement error!");
         return s;
     }
   
     private Block statements () {
+//    	System.out.println("\tblock");
         // Block --> '{' Statements '}'
         Block b = new Block();
         // student exercise
+        while(isStatement()){
+        	b.members.add(statement());
+        }
         return b;
     }
   
     private Assignment assignment () {
         // Assignment --> Identifier = Expression ;
+//    	System.out.println("\tassignment");
     	Variable var = new Variable(match(TokenType.Identifier));
     	match(TokenType.Assign);
     	Expression expr = expression();
+    	match(TokenType.Semicolon);
     	Assignment ass = new Assignment(var,expr);
         return ass;  // student exercise
     }
   
     private Conditional ifStatement () {
         // IfStatement --> if ( Expression ) Statement [ else Statement ]
+//    	System.out.println("\tif");
     	Conditional cond;
     	match(TokenType.If);
     	match(TokenType.LeftParen);
     	Expression expr = expression();
     	match(TokenType.RightParen);
-    	match(TokenType.LeftBrace);
     	Statement tStmt = statement();
-    	match(TokenType.RightBrace);
     	if(token.type().equals(TokenType.Else)){
-    		match(TokenType.LeftBrace);
         	Statement eStmt = statement();
-        	match(TokenType.RightBrace);
         	cond = new Conditional(expr,tStmt,eStmt);
     	} else cond = new Conditional(expr,tStmt); 
     	
@@ -123,44 +152,68 @@ public class Parser {
   
     private Loop whileStatement() {
         // WhileStatement --> while ( Expression ) Statement
+//    	System.out.println("\twhile");
     	match(TokenType.While);
     	match(TokenType.LeftParen);
     	Expression expr = expression();
     	match(TokenType.RightParen);
-    	match(TokenType.LeftBrace);
     	Statement tStmt = statement();
-    	match(TokenType.RightBrace);
     	Loop loop = new Loop(expr, tStmt);
         return loop;  // student exercise
     }
 
     private Expression expression () {
         // Expression --> Conjunction { || Conjunction }
+//    	System.out.println("\texpression");
     	Expression expr = conjunction();
+    	
     	while(token.type().equals(TokenType.Or)){
-    		match(TokenType.Or);
-    		
+    		Operator op = new Operator(match(TokenType.Or));
+    		Expression expr2 = conjunction();
+    		expr = new Binary(op, expr, expr2); 
     	}
         return expr;  // student exercise
     }
   
     private Expression conjunction () {
         // Conjunction --> Equality { && Equality }
-        return null;  // student exercise
+//    	System.out.println("\tconjunction");
+    	Expression expr = equality();
+    	while(token.type().equals(TokenType.And)){
+    		Operator op = new Operator(match(TokenType.And));
+    		Expression expr2 = equality();
+    		expr = new Binary(op, expr, expr2);
+    	}
+        return expr;  // student exercise
     }
   
     private Expression equality () {
         // Equality --> Relation [ EquOp Relation ]
-        return null;  // student exercise
+//    	System.out.println("\tequality");
+    	Expression expr = relation();
+    	if(isEqualityOp()){
+    		Operator op = new Operator(match(token.type()));
+    		Expression expr2 = relation();
+    		expr = new Binary(op, expr, expr2);
+    	}
+        return expr;  // student exercise
     }
 
     private Expression relation (){
         // Relation --> Addition [RelOp Addition] 
-        return null;  // student exercise
+//    	System.out.println("\tRelation");
+    	Expression expr = addition();
+    	if(isRelationalOp()){
+    		Operator op = new Operator(match(token.type()));
+    		Expression expr2 = addition();
+    		expr = new Binary(op, expr, expr2);
+    	}
+        return expr;  // student exercise
     }
   
     private Expression addition () {
         // Addition --> Term { AddOp Term }
+//    	System.out.println("\tAddition");
         Expression e = term();
         while (isAddOp()) {
             Operator op = new Operator(match(token.type()));
@@ -172,6 +225,7 @@ public class Parser {
   
     private Expression term () {
         // Term --> Factor { MultiplyOp Factor }
+//    	System.out.println("\tTerm");
         Expression e = factor();
         while (isMultiplyOp()) {
             Operator op = new Operator(match(token.type()));
@@ -182,7 +236,8 @@ public class Parser {
     }
   
     private Expression factor() {
-        // Factor --> [ UnaryOp ] Primary 
+        // Factor --> [ UnaryOp ] Primary
+//    	System.out.println("\tFactor");
         if (isUnaryOp()) {
             Operator op = new Operator(match(token.type()));
             Expression term = primary();
@@ -194,6 +249,7 @@ public class Parser {
     private Expression primary () {
         // Primary --> Identifier | Literal | ( Expression )
         //             | Type ( Expression )
+//    	System.out.println("\tPrimary");
         Expression e = null;
         if (token.type().equals(TokenType.Identifier)) {
             e = new Variable(match(TokenType.Identifier));
@@ -214,10 +270,40 @@ public class Parser {
     }
 
     private Value literal( ) {
-        return null;  // student exercise
+    	Value val = null;
+    	String tokenVal = token.value();
+    	if(token.type().equals(TokenType.IntLiteral)){	
+    		val = new IntValue(Integer.parseInt(tokenVal));
+    		token = lexer.next();
+    	}
+    	else if(token.type().equals(TokenType.FloatLiteral)){
+    		val = new FloatValue(Float.parseFloat(tokenVal)); 
+    		token = lexer.next();
+    	}
+    	else if(token.type().equals(TokenType.CharLiteral)){
+    		val = new CharValue(tokenVal.charAt(0));
+    		token = lexer.next();
+    	}
+    	else if(token.type().equals(TokenType.True)){
+    		val = new BoolValue(true);
+    		token = lexer.next();
+    	}
+    	else if(token.type().equals(TokenType.False)){
+    		val = new BoolValue(false);
+    		token = lexer.next();
+    	}
+    	else  error("literal error!");
+    	
+        return val;  // student exercise
     }
   
-
+    private boolean isStatement(){
+    	return 	token.type().equals(TokenType.Semicolon) 	||
+    			token.type().equals(TokenType.LeftBrace) 	||
+    			token.type().equals(TokenType.If) 			||
+    			token.type().equals(TokenType.While) 		||
+    			token.type().equals(TokenType.Identifier);
+    }
     private boolean isAddOp( ) {
         return token.type().equals(TokenType.Plus) ||
                token.type().equals(TokenType.Minus);
